@@ -3,14 +3,13 @@ import os
 import json
 
 
-
-def add2clipboard(text):
+def add2clipboard(text):  # TODO ehance for different OS
     command = 'echo ' + text + '| pbcopy'
     os.system(command)
 
 
 def update_key_file(key_chain):
-    f = open(f'{os.path.dirname(os.path.abspath(__file__))}/keys.json','w+')
+    f = open(f'{os.path.dirname(os.path.abspath(__file__))}/keys.json', 'w+')
     f.write(json.dumps(key_chain))
     f.close()
 
@@ -39,35 +38,50 @@ def get_totp_token(secret):
     return get_hotp_token(secret, intervals_no=int(time.time()) // 30)
 
 
-# print(get_totp_token('UMP6MMOYAVR5DU7PPXSQ5SNX65RYHWN3'))
-
 def load_existing_keys():
-    f = open(f'{os.path.dirname(os.path.abspath(__file__))}/keys.json', 'r')
+    f = open(f'{os.path.dirname(os.path.abspath(__file__))}/keys.json', 'a+')
+    f.seek(0, 0)
     return json.load(f)
 
 
 if __name__ == "__main__":
     # load dictionary of
-    key_chain: dict = load_existing_keys()
+    try:
+        key_chain: dict = load_existing_keys()
+    except json.JSONDecodeError:
+        key_chain: dict = {}
     # given choices
     index = 1
-    print("Existing Keys:")
+
     idx = {}
-    for key, value in key_chain.items():
-        print(f"{index}: {key}")
-        idx[str(index)] = value
-        index += 1
+    if key_chain:
+        print("Existing Keys:")
+        for key, value in key_chain.items():
+            print(f"{index}: {key}")
+            idx[str(index)] = value
+            index += 1
+        print('\n' * 3)
     print("Make your Choice:")
-    print("Enter N to create a new one not implemented.")
+    print("Enter N and secret string to create a new one not implemented.")
     print("Enter D and Index to remove a key.")
     print("Enter Index number to get the TOTP token.")
     #
-    usr_enter = input()
+    usr_enter = input().upper()
     if usr_enter == 'N':
-        print('not implemented')
+        print('enter the Name e.g. google:')
+        key_name = input()
+        print('enter the secret string:')
+        secret = input()
+        key_chain[key_name] = secret
         update_key_file(key_chain)
-    elif 'D ' in usr_enter:
-        print('not implemented')
+    elif usr_enter == 'D':
+        print('enter the name or index the key you want to remove')
+        value = input()
+        try:
+            int(value)
+            del key_chain[idx[value]]
+        except ValueError:
+            del key_chain[value]
         update_key_file(key_chain)
     else:
         add2clipboard(get_totp_token(idx[usr_enter]))
